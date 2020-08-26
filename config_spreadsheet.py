@@ -1,6 +1,3 @@
-# This is spreadsheat for creating config file for this bot
-# You cant complete missing parameters of this script and rename it to config.py
-
 ## Core settings
 IGNORE_COMMAND_ERRORS = False
 
@@ -13,7 +10,10 @@ CREATOR = int() ### Discord user id for creator permissions ###
 TESTERS = [] # Ids of other users to tester permissins
 
 # Bot minor changes
+# Logging settings
 LOGLEVEL = "INFO"
+LOG_FILE = "logFile.log"
+
 ENABLE_INVITELINK = True
 
 WORKERS_OF_SYNC_TASKS_EXECUTOR = 2
@@ -34,7 +34,6 @@ MODULES_PATH = "cogs"
 RPG_ITEMS_PATH = "data/rpg/items.json"
 SONG_CACHE_DIRECTORY = "cache/songs_cache"
 DOWNLOAD_SONG_CACHE_DIRECTORY = "cache/songs_download_cache"
-STATS_DIRECTORY = "data/statistics"
 GRAPHS_CACHE = "cache/graphs_cache"
 ##end
 
@@ -66,8 +65,8 @@ CACHE_CLEARING_ROUTINE_DELAY_MIN = 10
 
 # Processing threads settings
 ENABLE_SONGS_CACHING = True
-DOWNLOADER_THREADS = 8
-VOLUME_NORMALIZER_THREADS = 8
+DOWNLOADER_THREADS = 4
+VOLUME_NORMALIZER_THREADS = 4
 
 # Module limits
 MAX_PLAYLIST_LENGTH = 50
@@ -86,8 +85,6 @@ REDDIT_USER_AGENT = ""
 ## Stats settings
 STATS_AGREG_TIME_MINUTES = 10
 STATS_HISTORY_LOADING_DAYS = 10
-
-USERS_NUMBER_STATS_FILE = "users.csv"
 ##end
 
 ## Minigames config

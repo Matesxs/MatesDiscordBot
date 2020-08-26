@@ -1,0 +1,21 @@
+{
+  "0": {
+    "name": "Test equip1",
+    "slot": "head",
+    "rarity": "Legendary",
+    "health": 123456789,
+    "strength": 666,
+    "agility": 147369,
+    "regeneration": 3,
+    "sell_price": 320
+  },
+  "1": {
+    "name": "Test pet1",
+    "slot": "pet",
+    "rarity": "Rare",
+    "health": 5000,
+    "strength": 0,
+    "agility": 20,
+    "regeneration": 0
+  }
+}

@@ -1,0 +1,6 @@
+logFile.log
+cache/
+venv/
+.idea/
+__pycache__/
+config.py

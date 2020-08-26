@@ -1,0 +1,10 @@
+pymongo
+matplotlib
+pandas
+motor
+coloredlogs
+youtube_dl
+praw
+discord.py
+PyNaCl
+dnspython

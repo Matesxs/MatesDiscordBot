@@ -4,8 +4,8 @@ import datetime
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib import style
+from io import BytesIO
 from pandas.plotting import register_matplotlib_converters
-import os
 from collections import deque
 import discord
 from discord.ext import commands, tasks
@@ -13,7 +13,7 @@ from pymongo import ASCENDING
 
 from ext.modules.botBase import BaseBot
 from ext.miscellaneous.custom_loger import setup_custom_logger
-from config import STATS_AGREG_TIME_MINUTES, STATS_HISTORY_LOADING_DAYS, GRAPHS_CACHE
+from config import STATS_AGREG_TIME_MINUTES, STATS_HISTORY_LOADING_DAYS
 
 logger = setup_custom_logger(__name__)
 
@@ -25,9 +25,6 @@ class Stats(commands.Cog):
 
 	def __init__(self, bot:BaseBot):
 		self.bot = bot
-
-		if not os.path.exists(GRAPHS_CACHE): os.makedirs(GRAPHS_CACHE)
-		self.delete_graphs_cache()
 
 	def get_uptime(self):
 		total_seconds = float(time.time() - self.bot.boot_time)
@@ -58,12 +55,6 @@ class Stats(commands.Cog):
 		string += str(seconds) + " " + (seconds == 1 and "second" or "seconds")
 
 		return string
-
-	@staticmethod
-	def delete_graphs_cache():
-		if os.path.exists(GRAPHS_CACHE):
-			for file in os.listdir(GRAPHS_CACHE):
-				os.remove(os.path.join(GRAPHS_CACHE, file))
 
 	async def load_user_stats(self):
 		try:
@@ -127,11 +118,12 @@ class Stats(commands.Cog):
 
 	@staticmethod
 	async def post_fig_as_image(ctx, fig, time_delay:int=30):
-		save_path = f'{GRAPHS_CACHE}/{len(os.listdir(GRAPHS_CACHE))}.png'
-		plt.savefig(save_path)
+		with BytesIO() as image_binary:
+			plt.savefig(image_binary, format="png")
+			image_binary.seek(0)
 
-		await ctx.send(file=discord.File(save_path), delete_after=time_delay)
-		os.remove(save_path)
+			await ctx.send(file=discord.File(fp=image_binary, filename="graph.png"), delete_after=time_delay)
+
 		plt.close(fig)
 
 	@commands.command(no_pm=True, name="users", help="!users to show graph of users count on servers with this bot")

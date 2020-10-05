@@ -34,7 +34,6 @@ MODULES_PATH = "cogs"
 RPG_ITEMS_PATH = "data/rpg/items.json"
 SONG_CACHE_DIRECTORY = "cache/songs_cache"
 DOWNLOAD_SONG_CACHE_DIRECTORY = "cache/songs_download_cache"
-GRAPHS_CACHE = "cache/graphs_cache"
 ##end
 
 ## RPG settings

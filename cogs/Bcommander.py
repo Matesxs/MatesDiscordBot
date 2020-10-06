@@ -77,7 +77,6 @@ class Bcommander(commands.Cog):
 			if not discord.utils.get(ctx.guild.roles, name=role_name): return await self.bot.send_message_for_time(ctx, embed=generate_error_message("Cant find this role on your server!\nEnter valid role name."))
 
 		guild_settings = await self.bot.database_handler.get_guild_settings(ctx.guild)
-		if not role_name and not guild_settings.default_role: return await self.bot.send_message_for_time(ctx, embed=generate_success_message(f"Your default role was set to: {role_name}"))
 		guild_settings.default_role = role_name
 
 		if not await guild_settings.update_guild_settings(): return await self.bot.send_message_for_time(ctx, embed=generate_error_message("Cant update your guild in database!"))
@@ -93,11 +92,22 @@ class Bcommander(commands.Cog):
 			if not discord.utils.get(ctx.guild.roles, name=role_name): return await self.bot.send_message_for_time(ctx, embed=generate_error_message("Cant find this role on your server!\nEnter valid role name."))
 
 		guild_settings = await self.bot.database_handler.get_guild_settings(ctx.guild)
-		if not role_name and not guild_settings.default_role: return await self.bot.send_message_for_time(ctx, embed=generate_success_message(f"Your mute role was set to: {role_name}"))
 		guild_settings.muted_role = role_name
 
 		if not await guild_settings.update_guild_settings(): return await self.bot.send_message_for_time(ctx, embed=generate_error_message("Cant update your guild in database!"))
 		return await self.bot.send_message_for_time(ctx, embed=generate_success_message(f"Your mute role was set to: {role_name}"))
+
+	@commands.command(no_pm=True, name='set_rpg_notifications', help='!set_rpg_notifications <0 / 1> to set rpg notifications ON or OFF')
+	@commands.has_role('Bcommander')
+	@commands.cooldown(1, 30, commands.BucketType.user)
+	async def set_rpg_notifications(self, ctx, *, notification_status:bool):
+		await ctx.message.delete()
+
+		guild_settings = await self.bot.database_handler.get_guild_settings(ctx.guild)
+		guild_settings.rpg_notifications = notification_status
+
+		if not await guild_settings.update_guild_settings(): return await self.bot.send_message_for_time(ctx, embed=generate_error_message("Cant update your guild in database!"))
+		return await self.bot.send_message_for_time(ctx, embed=generate_success_message(f"RPG notifications were set to: {notification_status}"))
 
 	@commands.command(no_pm=True, name='set_welcome_message',help='!set_welcome_message <optional message> to set welcome message on your server, leave blank for remove welcome message')
 	@commands.has_role('Bcommander')
@@ -106,7 +116,6 @@ class Bcommander(commands.Cog):
 		await ctx.message.delete()
 
 		guild_settings = await self.bot.database_handler.get_guild_settings(ctx.guild)
-		if not welcome_message and not guild_settings.welcome_message: return await self.bot.send_message_for_time(ctx, embed=generate_success_message(f"Your welcome message was set to:\n{welcome_message}"))
 		guild_settings.welcome_message = welcome_message
 
 		if not await guild_settings.update_guild_settings(): return await self.bot.send_message_for_time(ctx, embed=generate_error_message("Cant update your guild in database!"))
@@ -122,7 +131,6 @@ class Bcommander(commands.Cog):
 			if not discord.utils.get(ctx.guild.text_channels, name=log_channel): return await self.bot.send_message_for_time(ctx, embed=generate_error_message("Cant find this channel in your server!"))
 
 		guild_settings = await self.bot.database_handler.get_guild_settings(ctx.guild)
-		if not log_channel and not guild_settings.log_channel: return await self.bot.send_message_for_time(ctx, embed=generate_success_message(f"Your log channel was set to:\n{log_channel}"))
 		guild_settings.log_channel = log_channel
 
 		if not await guild_settings.update_guild_settings(): return await self.bot.send_message_for_time(ctx, embed=generate_error_message("Cant update your guild in database!"))
@@ -142,6 +150,8 @@ class Bcommander(commands.Cog):
 		em.add_field(name="Muted role", value=str(guild_settings.muted_role), inline=False)
 		em.add_field(name="Log Channel", value=str(guild_settings.log_channel), inline=False)
 		em.add_field(name="Welcome message", value=str(guild_settings.welcome_message), inline=False)
+		em.add_field(name="YT and SE volume", value=str(guild_settings.volume) + "%", inline=False)
+		em.add_field(name="RPG Notifications", value=str(guild_settings.rpg_notifications), inline=False)
 
 		return await self.bot.send_message_for_time(ctx, embed=em, time=20)
 
@@ -273,7 +283,7 @@ class Bcommander(commands.Cog):
 					await self.bot.send_message_for_time(ctx, embed=em_log)
 				else:
 					await self.bot.send_message_for_time(ctx, embed=generate_error_message("Users wont be kicked"))
-			except Exception as e:
+			except Exception:
 				await self.bot.send_message_for_time(ctx, embed=generate_error_message("Something failed"))
 		else:
 			await self.bot.send_message_for_time(ctx, embed=generate_error_message("Nobody to kick"))
@@ -330,7 +340,7 @@ class Bcommander(commands.Cog):
 					await self.bot.send_message_for_time(ctx, embed=em_log)
 				else:
 					await self.bot.send_message_for_time(ctx, embed=generate_error_message("Users wont be banned"))
-			except Exception as e:
+			except Exception:
 				await self.bot.send_message_for_time(ctx, embed=generate_error_message("Something failed"))
 		else:
 			await self.bot.send_message_for_time(ctx, embed=generate_error_message("Nobody to ban"))

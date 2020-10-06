@@ -5,9 +5,8 @@ from discord.ext import commands, tasks
 
 from ext.modules.botBase import BaseBot
 from ext.miscellaneous.custom_loger import setup_custom_logger
-from ext.helpers.general_helpers import generate_error_message, generate_success_message
-from config import GAMBLE_NUMBER_OF_DRAWN_NUMBERS, MAXIMUM_INVENTORY_SIZE, BASE_WORK_REVENUE_FOR_HOUR
-from ext.helpers.database_helper_objects import Item
+from ext.helpers.general_helpers import generate_error_message
+from config import GAMBLE_NUMBER_OF_DRAWN_NUMBERS, BASE_WORK_REVENUE_FOR_HOUR
 from ext.modules.prompt import PromptSession
 
 logger = setup_custom_logger(__name__)
@@ -159,154 +158,6 @@ class BaseRPGSet(commands.Cog):
 
 		return await self.bot.send_message_for_time(ctx, embed=discord.Embed(title='Transaction', description=f'Transfered {ammount} :moneybag: from {ctx.message.author.name} to {disc_user_receiver.name}', colour=discord.Color.gold()), time=7)
 
-	@commands.command(no_pm=True, name='inventory', help='!inventory to see your inventory')
-	@commands.cooldown(3, 60, commands.BucketType.user)
-	async def inventory(self, ctx: commands.Context):
-		await ctx.message.delete()
-
-		user = await self.bot.database_handler.get_user(ctx.author)
-
-		em = discord.Embed(title=":toolbox: | Inventory", color=discord.Color.blurple())
-		em.set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url)
-		for idx, item in enumerate(user.items):
-			if isinstance(item, Item):
-				formed_string = ""
-				if item.health > 0: formed_string += f"Health: {item.health}\n"
-				if item.strength > 0: formed_string += f"Strength: {item.strength}\n"
-				if item.agility > 0: formed_string += f"Agility: {item.agility}\n"
-				if item.regeneration > 0: formed_string += f"Regeneration: {item.regeneration}\n"
-				if item.sell_price: formed_string += f"\nSell Price: {item.sell_price} :moneybag:"
-				if formed_string[-1] == "\n": formed_string = formed_string[:-1]
-				em.add_field(name=f"({idx}){item.name} - {Item.slot_formater(item.slot)}\n-- {item.rarity} --", value=formed_string)
-		if len(user.items) == 0:
-			em.description = "Your inventory is empty\nCollect some items!"
-		em.set_footer(text=f"{len(user.items)}/{MAXIMUM_INVENTORY_SIZE} used")
-
-		await self.bot.send_message_for_time(ctx, embed=em, time=30)
-
-	@commands.command(no_pm=True, name='char', help='!char to show equip and stats')
-	@commands.cooldown(3, 60, commands.BucketType.user)
-	async def character(self, ctx: commands.Context):
-		await ctx.message.delete()
-
-		user = await self.bot.database_handler.get_user(ctx.author)
-
-		em = discord.Embed(title=":crown: | Character", color=discord.Color.blurple())
-		em.set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url)
-
-		formated_stats = ""
-		stats = user.get_stats()
-		for stat_key in stats.keys():
-			formated_stats += f"{stat_key}: {stats[stat_key]}\n"
-		em.description = formated_stats
-
-		for eq_slot in user.equip.keys():
-			item = user.equip[eq_slot]
-			if item:
-				formed_string = f"{item.name}\n-- {item.rarity} --\n\n"
-				if item.health > 0: formed_string += f"Health: {item.health}\n"
-				if item.strength > 0: formed_string += f"Strength: {item.strength}\n"
-				if item.agility > 0: formed_string += f"Agility: {item.agility}\n"
-				if item.regeneration > 0: formed_string += f"Regeneration: {item.regeneration}"
-				if formed_string[-1] == "\n": formed_string = formed_string[:-1]
-
-				em.add_field(name=Item.slot_formater_idx(eq_slot), value=formed_string)
-			else:
-				em.add_field(name=Item.slot_formater_idx(eq_slot), value="Empty")
-
-		await self.bot.send_message_for_time(ctx, embed=em, time=30)
-
-	@commands.command(no_pm=True, name='sell', help='!sell <inventory index / all> to sell item of that index or all items to vendor')
-	@commands.cooldown(2, 20, commands.BucketType.user)
-	async def sell(self, ctx: commands.Context, *, inventory_index):
-		await ctx.message.delete()
-
-		sell_all = False
-		if "all" in inventory_index: sell_all = True
-		else:
-			try:
-				inventory_index = int(inventory_index)
-			except:
-				return await self.bot.send_message_for_time(ctx, embed=generate_error_message("Invalid inventory index"), time=5)
-
-		user = await self.bot.database_handler.get_user(ctx.author)
-		if not sell_all:
-			if inventory_index > (len(user.items) - 1) or 0 > inventory_index: return await self.bot.send_message_for_time(ctx, embed=generate_error_message("Invalid inventory index"), time=5)
-
-		sold_value = 0
-		if sell_all:
-			for _ in range(len(user.items)):
-				item = user.items.pop()
-				if item.sell_price:
-					user.coins += item.sell_price
-					sold_value += item.sell_price
-
-			if not await user.update_user(): return await self.bot.send_message_for_time(ctx, embed=generate_error_message("Cant update user in database!"), time=5)
-			return await self.bot.send_message_for_time(ctx, embed=generate_success_message(f"All items sold for {sold_value} :moneybag:"), time=5)
-		else:
-			item = user.items.pop(inventory_index)
-			if item.sell_price:
-				user.coins += item.sell_price
-				sold_value = item.sell_price
-
-			if not await user.update_user(): return await self.bot.send_message_for_time(ctx, embed=generate_error_message("Cant update user in database!"), time=5)
-			return await self.bot.send_message_for_time(ctx, embed=generate_success_message(f"{item.name} sold for {sold_value} :moneybag:"), time=5)
-
-	@commands.command(no_pm=True, name='equip', help='!equip <inventory index> to equip item from inventory')
-	@commands.cooldown(2, 10, commands.BucketType.user)
-	async def equip(self, ctx: commands.Context, *, inventory_index:int):
-		await ctx.message.delete()
-
-		user = await self.bot.database_handler.get_user(ctx.author)
-		if inventory_index > (len(user.items) - 1) or 0 > inventory_index: return await self.bot.send_message_for_time(ctx, embed=generate_error_message("Invalid inventory index"))
-
-		item = user.items.pop(inventory_index)
-
-		if user.equip[item.slot]:
-			user.items.append(user.equip[item.slot])
-		user.equip[item.slot] = item
-
-		if not await user.update_user(): return await self.bot.send_message_for_time(ctx, embed=generate_error_message("Cant update user in database!"))
-		return await self.bot.send_message_for_time(ctx, embed=generate_success_message(f"{item.name} equiped"))
-
-	@commands.command(no_pm=True, name='unequip', help='!unequip <slot index / all> to unequip item')
-	@commands.cooldown(2, 10, commands.BucketType.user)
-	async def unequip(self, ctx: commands.Context, *, slot_index):
-		await ctx.message.delete()
-
-		unequip_all = False
-		if "all" in slot_index: unequip_all = True
-
-		user = await self.bot.database_handler.get_user(ctx.author)
-
-		if unequip_all:
-			for item in user.equip.values():
-				if item:
-					user.items.append(item)
-
-			for slot in user.equip.keys():
-				user.equip[slot] = None
-
-			if not await user.update_user(): return await self.bot.send_message_for_time(ctx, embed=generate_error_message("Cant update user in database!"))
-			return await self.bot.send_message_for_time(ctx, embed=generate_success_message(f"All items unequiped"))
-		else:
-			try:
-				inventory_index = int(slot_index)
-			except:
-				return await self.bot.send_message_for_time(ctx, embed=generate_error_message("Invalid inventory index"))
-
-			slot_from_dict = Item.idx_to_slot(inventory_index)
-			if not slot_from_dict: return await self.bot.send_message_for_time(ctx, embed=generate_error_message("Invalid slot index"))
-
-			item = user.equip[slot_from_dict]
-
-			if not item: return await self.bot.send_message_for_time(ctx, embed=generate_error_message("Nothing to unequip!"))
-
-			user.equip[slot_from_dict] = None
-			user.items.append(item)
-			if not await user.update_user(): return await self.bot.send_message_for_time(ctx, embed=generate_error_message("Cant update user in database!"))
-			return await self.bot.send_message_for_time(ctx, embed=generate_success_message(f"{item.name} unequiped"))
-
 class RPG(BaseRPGSet):
 	works = []
 
@@ -385,7 +236,7 @@ class RPG(BaseRPGSet):
 		em.add_field(name="Work end at", value=work["end"].strftime('%H:%M:%S %d.%m.%Y'), inline=False)
 		return await self.bot.send_message_for_time(ctx, embed=em, time=10)
 
-	@commands.command(no_pm=True, name='workstop', help='!workstop to stop your current work WITHOUT revenue')
+	@commands.command(no_pm=True, name='stopwork', help='!stopwork to stop your current work WITHOUT revenue')
 	@commands.cooldown(2, 120, commands.BucketType.user)
 	async def workstop(self, ctx: commands.Context):
 		await ctx.message.delete()

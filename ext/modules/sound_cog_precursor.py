@@ -15,7 +15,6 @@ logger = setup_custom_logger(__name__)
 
 class GenericSoundCog(commands.Cog):
 	servers_queues = {}
-	banish_list = []
 
 	def __init__(self, bot:BaseBot):
 		self.bot = bot
@@ -33,7 +32,7 @@ class GenericSoundCog(commands.Cog):
 			if voice_client.is_playing(): return True
 		return False
 
-	async def connect_to_voice_channel(self, channel:discord.VoiceChannel) -> Union[discord.VoiceClient, None]:
+	async def connect_to_voice_channel(self, channel) -> Union[discord.VoiceClient, discord.VoiceProtocol, None]:
 		voice_client:discord.VoiceClient = discord.utils.get(self.bot.voice_clients, guild=channel.guild)
 		if not voice_client:
 			voice_client = await channel.connect()
@@ -56,13 +55,10 @@ class GenericSoundCog(commands.Cog):
 				return True
 		return False
 
-	async def play_source(self, ctx, volume, source_file:Union[str, dict]):
+	async def play_source(self, ctx, source_file:Union[str, dict]):
 		if isinstance(source_file, str):
 			if not os.path.isfile(source_file):
 				return await self.bot.send_message_for_time(ctx, embed=generate_error_message("Invalid path to source file"))
-
-		if 0 > volume > 1:
-			return await self.bot.send_message_for_time(ctx, embed=generate_error_message("Invalid value of volume - volume range <0 - 1>"))
 
 		if not ctx.message.author.voice:
 			return await self.bot.send_message_for_time(ctx, embed=generate_error_message("You are not in voice channel!"))
@@ -74,6 +70,7 @@ class GenericSoundCog(commands.Cog):
 
 		plaing_message = None
 		source = None
+		gsettings = await self.bot.database_handler.get_guild_settings(ctx.guild)
 
 		try:
 			if isinstance(source_file, dict):
@@ -82,7 +79,7 @@ class GenericSoundCog(commands.Cog):
 				if source_file['duration'][0] > MAX_SONG_DURATION_MINS:
 					await self.bot.send_message_for_time(ctx, embed=generate_error_message(f"Song: {source_file['title']} is too long!\nMaximum duration is {MAX_SONG_DURATION_MINS}min"))
 				else:
-					source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(source_file["source"]), volume=volume)
+					source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(source_file["source"]), volume=(gsettings.volume / 100))
 					voice.play(source)
 
 					em = discord.Embed(title=":notes: | Playing", color=discord.Color.dark_blue())
@@ -105,21 +102,13 @@ class GenericSoundCog(commands.Cog):
 
 					while voice.is_playing():
 						await asyncio.sleep(1)
-						if ctx.guild.id in self.banish_list:
-							self.banish_list = [x for x in self.banish_list if x != ctx.guild.id]
-							await voice.stop()
-							break
 			else:
 				await asyncio.sleep(1)
-				source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(source_file), volume=volume)
+				source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(source_file), volume=(gsettings.volume / 100))
 				voice.play(source)
 
 				while voice.is_playing():
 					await asyncio.sleep(1)
-					if ctx.guild.id in self.banish_list:
-						self.banish_list = [x for x in self.banish_list if x != ctx.guild.id]
-						await voice.stop()
-						break
 
 		except:
 			await self.bot.send_message_for_time(ctx, embed=generate_error_message("Playing failed"))
@@ -129,7 +118,7 @@ class GenericSoundCog(commands.Cog):
 				if len(self.servers_queues[ctx.guild.id]) > 0:
 					data = self.servers_queues[ctx.guild.id].popleft()
 					await asyncio.sleep(1)
-					if data: return await self.play_source(data["ctx"], data["volume"], data["source_file"])
+					if data: return await self.play_source(data["ctx"], data["source_file"])
 				else:
 					del self.servers_queues[ctx.guild.id]
 
@@ -137,11 +126,11 @@ class GenericSoundCog(commands.Cog):
 			if source: source.cleanup()
 			return await self.disconnect_from_voice_channel(ctx.guild)
 
-	def add_to_queue(self, ctx:commands.Context, volume:float, source_file:Union[str, dict]):
+	def add_to_queue(self, ctx:commands.Context, source_file:Union[str, dict]):
 		if not ctx.guild.id in self.servers_queues:
 			self.servers_queues[ctx.guild.id] = deque()
 		try:
-			self.servers_queues[ctx.guild.id].append({"ctx": ctx, "volume": volume, "source_file": source_file})
+			self.servers_queues[ctx.guild.id].append({"ctx": ctx, "source_file": source_file})
 			return True
 		except:
 			return False

@@ -193,7 +193,7 @@ class Youtube(GenericSoundCog):
 
 		return data
 
-	@commands.command(no_pm=True, name="kstop", help="!kstop to stop actual request and clear queue (Bcommander only)")
+	@commands.command(no_pm=True, name="stop", help="!stop to stop actual request and clear queue (Bcommander only)")
 	@commands.has_role("Bcommander")
 	async def kill_play(self, ctx: commands.Context):
 		await ctx.message.delete()
@@ -201,21 +201,38 @@ class Youtube(GenericSoundCog):
 		voice_client: discord.VoiceClient = discord.utils.get(self.bot.voice_clients, guild=ctx.guild)
 		if not self.voice_client_playing(voice_client): return await self.bot.send_message_for_time(ctx, embed=generate_error_message("Bot is not playing!"))
 
-		self.banish_list.append(ctx.guild.id)
+		if ctx.guild.id in self.servers_queues.keys():
+			del self.servers_queues[ctx.guild.id]
+		voice_client.stop()
+
 		return await self.bot.send_message_for_time(ctx, embed=generate_success_message("Bot being stopped"))
 
-	@commands.command(no_pm=True, name="play", help="!play <volume 0-100> <search or source> to play song from Youtube")
-	@commands.cooldown(2, 30, commands.BucketType.user)
-	async def _play(self, ctx, volume: float, *, source: str):
+	@commands.command(no_pm=True, name="volume", aliases=["vol"], help="!volume <0 - 100> to set volume of YT and soundeffects (Bcommander only)")
+	@commands.has_role("Bcommander")
+	async def volume(self, ctx: commands.Context, *, volume:int):
 		await ctx.message.delete()
-		volume = volume / 100
+		if volume > 100 or volume < 0: return await self.bot.send_message_for_time(ctx, embed=generate_error_message("Volume must be > 0 and < 100!"))
+
+		voice_client:discord.VoiceClient = discord.utils.get(self.bot.voice_clients, guild=ctx.guild)
+		if self.voice_client_playing(voice_client):
+			voice_client.source.volume = volume
+
+		guild_settings = await self.bot.database_handler.get_guild_settings(ctx.guild)
+		guild_settings.volume = volume
+		if not await guild_settings.update_guild_settings(): return await self.bot.send_message_for_time(ctx, embed=generate_error_message("Cant update your guild in database!"))
+		return await self.bot.send_message_for_time(ctx, embed=generate_success_message(f"Volume for your server is set to {volume}%"))
+
+	@commands.command(no_pm=True, name="play", help="!play <search or source> to play song from Youtube")
+	@commands.cooldown(2, 30, commands.BucketType.user)
+	async def _play(self, ctx, *, source: str):
+		await ctx.message.delete()
 
 		data = await self.get_source_from_youtube(ctx, source, is_playlist=False, cached=False)
 		if not data: return await self.bot.send_message_for_time(ctx, embed=generate_error_message("Cant find anything to play!"))
 
 		voice_client: discord.VoiceClient = discord.utils.get(self.bot.voice_clients, guild=ctx.guild)
 		if self.voice_client_playing(voice_client):
-			if self.add_to_queue(ctx, volume, data[0]):
+			if self.add_to_queue(ctx, data[0]):
 				em = discord.Embed(title=":notes: | Added to queue", color=discord.Color.dark_blue())
 				em.description = f"{data[0]['title']}\n"
 				em.add_field(name="Duration", value=f"{data[0]['duration'][0]}min {data[0]['duration'][1]}s", inline=True)
@@ -226,13 +243,12 @@ class Youtube(GenericSoundCog):
 			else:
 				return await self.bot.send_message_for_time(ctx, embed=generate_error_message("Failed to add your request to queue!"))
 
-		await self.play_source(ctx, volume, data[0])
+		await self.play_source(ctx, data[0])
 
-	@commands.command(no_pm=True, name="playp", help="!playp <volume 0-100> <source of playlist> to play Youtube playlist")
+	@commands.command(no_pm=True, name="playp", help="!playp <source of playlist> to play Youtube playlist")
 	@commands.cooldown(2, 40, commands.BucketType.user)
-	async def _play_playlist(self, ctx, volume: float, *, source: str):
+	async def _play_playlist(self, ctx, *, source: str):
 		await ctx.message.delete()
-		volume = volume / 100
 
 		data = await self.get_source_from_youtube(ctx, source, is_playlist=True, cached=False, limit_songs=MAX_PLAYLIST_LENGTH)
 		if not data: return await self.bot.send_message_for_time(ctx, embed=generate_error_message("Cant find anything to play!"))
@@ -242,7 +258,7 @@ class Youtube(GenericSoundCog):
 			try:
 				for idx, d in enumerate(data):
 					if not idx == 0:
-						self.add_to_queue(ctx, volume, d)
+						self.add_to_queue(ctx, d)
 
 				if len(data) > 1:
 					return await self.bot.send_message_for_time(ctx, embed=generate_success_message("Your request is added to queue!"))
@@ -261,20 +277,19 @@ class Youtube(GenericSoundCog):
 			try:
 				for idx, d in enumerate(data):
 					if not idx == 0:
-						self.add_to_queue(ctx, volume, d)
+						self.add_to_queue(ctx, d)
 			except:
 				if ctx.guild.id in self.servers_queues: del self.servers_queues[ctx.guild.id]
 				return await self.bot.send_message_for_time(ctx, embed=generate_error_message("Failed to add your request!"))
 
-		await self.play_source(ctx, volume, data[0])
+		await self.play_source(ctx, data[0])
 
 	if ENABLE_SONGS_CACHING:
-		@commands.command(no_pm=True, name="cplay", help="!cplay <volume 0-100> <search or source> to play song from Youtube with server caching - developer and testers only")
+		@commands.command(no_pm=True, name="cplay", help="!cplay <search or source> to play song from Youtube with server caching - developer and testers only")
 		@commands.cooldown(2, 30, commands.BucketType.user)
 		@developerOrTester()
-		async def _cplay(self, ctx, volume: float, *, source: str):
+		async def _cplay(self, ctx, *, source: str):
 			await ctx.message.delete()
-			volume = volume / 100
 
 			await self.bot.send_message_for_time(ctx, embed=generate_success_message("Command is registered!"))
 			data = await self.get_source_from_youtube(ctx, source, is_playlist=False, cached=True)
@@ -282,7 +297,7 @@ class Youtube(GenericSoundCog):
 
 			voice_client: discord.VoiceClient = discord.utils.get(self.bot.voice_clients, guild=ctx.guild)
 			if self.voice_client_playing(voice_client):
-				if self.add_to_queue(ctx, volume, data[0]):
+				if self.add_to_queue(ctx, data[0]):
 					em = discord.Embed(title=":notes: | Added to queue", color=discord.Color.dark_blue())
 					em.description = f"{data[0]['title']}\n"
 					em.add_field(name="Duration", value=f"{data[0]['duration'][0]}min {data[0]['duration'][1]}s", inline=True)
@@ -293,14 +308,13 @@ class Youtube(GenericSoundCog):
 				else:
 					return await self.bot.send_message_for_time(ctx, embed=generate_error_message("Failed to add your request to queue!"))
 
-			await self.play_source(ctx, volume, data[0])
+			await self.play_source(ctx, data[0])
 
-		@commands.command(no_pm=True, name="cplayp", help="!cplayp <volume 0-100> <source of playlist> to play Youtube playlist with server caching - developer and testers only")
+		@commands.command(no_pm=True, name="cplayp", help="!cplayp <source of playlist> to play Youtube playlist with server caching - developer and testers only")
 		@commands.cooldown(2, 60, commands.BucketType.user)
 		@developerOrTester()
-		async def _cplay_playlist(self, ctx, volume: float, *, source: str):
+		async def _cplay_playlist(self, ctx, *, source: str):
 			await ctx.message.delete()
-			volume = volume / 100
 
 			await self.bot.send_message_for_time(ctx, embed=generate_success_message("Command is registered!"))
 			data = await self.get_source_from_youtube(ctx, source, is_playlist=True, cached=True, limit_songs=MAX_PLAYLIST_LENGTH_CACHED)
@@ -311,7 +325,7 @@ class Youtube(GenericSoundCog):
 				try:
 					for idx, d in enumerate(data):
 						if not idx == 0:
-							self.add_to_queue(ctx, volume, d)
+							self.add_to_queue(ctx, d)
 
 					if len(data) > 1:
 						return await self.bot.send_message_for_time(ctx, embed=generate_success_message("Your request is added to queue!"))
@@ -330,12 +344,12 @@ class Youtube(GenericSoundCog):
 				try:
 					for idx, d in enumerate(data):
 						if not idx == 0:
-							self.add_to_queue(ctx, volume, d)
+							self.add_to_queue(ctx, d)
 				except:
 					if ctx.guild.id in self.servers_queues: del self.servers_queues[ctx.guild.id]
 					return await self.bot.send_message_for_time(ctx, embed=generate_error_message("Failed to add your request!"))
 
-			await self.play_source(ctx, volume, data[0])
+			await self.play_source(ctx, data[0])
 
 	@tasks.loop(minutes=CACHE_CLEARING_ROUTINE_DELAY_MIN)
 	async def clearing_music_cache_task(self):

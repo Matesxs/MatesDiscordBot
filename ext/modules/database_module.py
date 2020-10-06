@@ -4,7 +4,7 @@ import discord
 
 from ext.miscellaneous.custom_loger import setup_custom_logger
 from config import MONGO_DATABASE_USERNAME, MONGO_DATABASE_PASSWORD, MAX_CACHED_USERS, MAX_CACHED_GUILD_SETTINGS
-from ext.helpers.database_helper_objects import GuildSettings, User, cached_items
+from ext.helpers.database_helper_objects import GuildSettings, User
 
 logger = setup_custom_logger(__name__)
 
@@ -83,6 +83,3 @@ class DatabaseHelper:
 		if len(self.cached_guild_settings) > MAX_CACHED_GUILD_SETTINGS: self.cached_guild_settings = self.cached_guild_settings[-MAX_CACHED_GUILD_SETTINGS:]
 
 		return rguildsettings
-
-def is_id_in_items(identifier:int) -> bool:
-	return str(identifier) in cached_items.keys()

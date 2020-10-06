@@ -19,15 +19,7 @@ class BaseBot(commands.AutoShardedBot):
 	ended = False
 
 	def __init__(self, prefix, description):
-		intents = discord.Intents.none()
-		intents.guilds = True
-		intents.members = True
-		intents.emojis = True
-		intents.messages = True
-		intents.reactions = True
-		intents.bans = True
-		intents.typing = True
-
+		intents = discord.Intents.all()
 		super().__init__(command_prefix=prefix, description=description, intents=intents)
 
 		self.remove_command("help")

@@ -11,7 +11,7 @@ from ext.modules.paginator import PaginatorSession
 from ext.miscellaneous.custom_loger import setup_custom_logger
 from ext.helpers.general_helpers import get_creator, generate_success_message, generate_error_message, is_bcommander, is_developer
 from ext.modules.prompt import PromptSession
-from config import ENABLE_INVITELINK
+from config import ENABLE_INVITELINK, PERMISSION_INTEGER
 
 logger = setup_custom_logger(__name__)
 
@@ -184,7 +184,7 @@ class Common(commands.Cog):
 	async def invite(self, ctx):
 		emb = discord.Embed(title='Invite Link', colour=discord.Color.dark_blue())
 		if ENABLE_INVITELINK:
-			emb.description = f'[Click Here](https://discordapp.com/oauth2/authorize?client_id={self.bot.user.id}&scope=bot&permissions=8)'
+			emb.description = f'[Click Here](https://discordapp.com/oauth2/authorize?client_id={self.bot.user.id}&scope=bot&permissions={PERMISSION_INTEGER})'
 		else:
 			emb.description = "WIP"
 		emb.set_thumbnail(url=self.bot.user.avatar_url)
@@ -199,7 +199,7 @@ class Common(commands.Cog):
 		try:
 			with open('data/BugReport.rep', 'a') as f:
 				f.write(message_to_save)
-		except Exception as e:
+		except Exception:
 			return await self.bot.send_message_for_time(ctx, embed=generate_error_message("Cant send your bugreport to creator!"))
 
 		logger.warning('New Bugreport!')

@@ -74,11 +74,12 @@ class BaseBot(commands.AutoShardedBot):
 
 	# Copied from https://github.com/Toaster192/rubbergod
 	async def on_error(self, event_method, *args, **kwargs):
-		if not DEVELOPER_CHANNEL_ID or not DEVELOPER_SERVER_ID: return
-
-		channel_out = self.get_channel(DEVELOPER_CHANNEL_ID)
 		output = traceback.format_exc()
 		logger.error(output)
+
+		if not DEVELOPER_CHANNEL_ID or not DEVELOPER_SERVER_ID: return
+		channel_out:discord.TextChannel = self.get_channel(DEVELOPER_CHANNEL_ID)
+		if not channel_out: return
 
 		embeds = []
 		for arg in args:

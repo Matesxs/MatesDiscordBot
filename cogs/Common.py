@@ -138,11 +138,13 @@ class Common(commands.Cog):
 
 		if DEVELOPER_CHANNEL_ID:
 			channel_out:discord.TextChannel = self.bot.get_channel(DEVELOPER_CHANNEL_ID)
-			emb = discord.Embed(title="Bug report", color=discord.Color.dark_orange())
-			emb.set_footer(text=ctx.message.author.name, icon_url=ctx.message.author.avatar_url)
-			emb.add_field(name="Guild", value=ctx.message.guild.name, inline=False)
-			emb.add_field(name="Description", value=message, inline=False)
-			await channel_out.send(embed=emb)
+
+			if channel_out:
+				emb = discord.Embed(title="Bug report", color=discord.Color.dark_orange())
+				emb.set_footer(text=ctx.message.author.name, icon_url=ctx.message.author.avatar_url)
+				emb.add_field(name="Guild", value=ctx.message.guild.name, inline=False)
+				emb.add_field(name="Description", value=message, inline=False)
+				await channel_out.send(embed=emb)
 
 		try:
 			with open('data/BugReport.rep', 'a') as f:

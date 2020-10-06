@@ -1,12 +1,11 @@
 import subprocess
-import math
 import asyncio
 import discord
 from discord.ext import commands
 
 from ext.modules.botBase import BaseBot
 from ext.miscellaneous.custom_loger import setup_custom_logger
-from ext.helpers.general_helpers import developer, generate_error_message, generate_success_message
+from ext.helpers.general_helpers import developer, generate_error_message, generate_success_message, cut_string
 
 logger = setup_custom_logger(__name__)
 
@@ -46,16 +45,13 @@ class Developer(commands.Cog):
 			await ctx.message.delete()
 			return await self.bot.send_message_for_time(ctx, embed=generate_error_message("Failed to run this command"))
 
-		ret_num = math.ceil(len(ret) / 1500)
+		returned_strings = cut_string(ret, 1500)
 
 		msgs = []
 
-		for i in range(ret_num):
-			if len(ret[i:]) > 1500:
-				msgs.append(await ctx.send(f'```\n{ret[i * 1500:(i + 1) * 1500]}\n```'))
-			else:
-				msgs.append(await ctx.send(f'```\n{ret[i * 1500:]}\n```'))
-			await asyncio.sleep(0.5)
+		for val in returned_strings:
+			msgs.append(await ctx.send(f'```\n{val}\n```'))
+			await asyncio.sleep(0.1)
 
 		await self.bot.send_message_for_time(ctx, embed=generate_success_message("Command finished!"))
 		await ctx.message.delete()

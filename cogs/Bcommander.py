@@ -17,7 +17,7 @@ class Bcommander(commands.Cog):
 
 	@commands.command(pass_context=True, no_pm=True, help='!clear <1 - 100> for clearing messages from curent channel')
 	@commands.has_role('Bcommander')
-	@commands.cooldown(1, 10, commands.BucketType.user)
+	@commands.cooldown(2, 10, commands.BucketType.user)
 	async def clear(self, ctx, amount: int):
 		await ctx.message.delete()
 		await asyncio.sleep(1)
@@ -33,6 +33,7 @@ class Bcommander(commands.Cog):
 
 	@commands.command(no_pm=True, name='say', help='!say <message> for send message by bot')
 	@commands.has_role('Bcommander')
+	@commands.cooldown(5, 20, commands.BucketType.user)
 	async def _say(self, ctx, *, message:str=None):
 		await ctx.message.delete()
 
@@ -43,7 +44,7 @@ class Bcommander(commands.Cog):
 
 	@commands.command(no_pm=True, name='counter', help='!counter <number 1 - 600> count from number to 0')
 	@commands.has_role('Bcommander')
-	@commands.cooldown(1, 30, commands.BucketType.user)
+	@commands.cooldown(2, 30, commands.BucketType.user)
 	async def counter(self, ctx, *, count: int):
 		await ctx.message.delete()
 

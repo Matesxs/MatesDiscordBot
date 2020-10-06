@@ -1,7 +1,6 @@
 import time
 import discord
-import datetime
-from discord.ext import commands, tasks
+from discord.ext import commands
 from PIL import Image, ImageDraw
 from io import BytesIO
 import requests
@@ -10,7 +9,6 @@ from ext.modules.botBase import BaseBot
 from ext.modules.paginator import PaginatorSession
 from ext.miscellaneous.custom_loger import setup_custom_logger
 from ext.helpers.general_helpers import get_creator, generate_success_message, generate_error_message, is_bcommander, is_developer
-from ext.modules.prompt import PromptSession
 from config import ENABLE_INVITELINK, PERMISSION_INTEGER
 
 logger = setup_custom_logger(__name__)
@@ -20,64 +18,6 @@ class Common(commands.Cog):
 
 	def __init__(self, bot:BaseBot):
 		self.bot = bot
-
-		self.reminders_task.start()
-
-	async def process_reminder(self, reminder:dict):
-		em = discord.Embed(title=":alarm_clock: | Reminder", color=discord.Color.green(), description=f"{reminder['ctx'].author.mention} TIME IS UP!")
-		reminder_mes = await reminder["ctx"].send(embed=em)
-
-		prompt_ses = PromptSession(self.bot, reminder["ctx"], "End this reminder?", color=discord.Color.green())
-		ses_ret = await prompt_ses.run()
-
-		if ses_ret:
-			await reminder_mes.delete()
-		else:
-			await reminder_mes.delete()
-			if reminder["repeats"] > 5: return
-			reminder["time"] += datetime.timedelta(minutes=5)
-			reminder["repeats"] += 1
-			self.reminders.append(reminder)
-
-	@tasks.loop(seconds=5)
-	async def reminders_task(self):
-		if self.reminders:
-			for idx, reminder in enumerate(self.reminders):
-				if reminder["time"] <= datetime.datetime.now():
-					await self.process_reminder(self.reminders.pop(idx))
-
-	@commands.command(no_pm=True, name='reminder', help='!reminder <timestamp> - timestamp format: <x>h <y>m <z>s for getting reminder after this time')
-	@commands.cooldown(6, 300, commands.BucketType.user)
-	async def reminder(self, ctx:commands.Context, *, timestamp:str):
-		await ctx.message.delete()
-		
-		parsed_timestamp = timestamp.split(" ")
-		try:
-			timestamp_dict = {t[-1]: int(t[:-1]) for t in parsed_timestamp}
-		except: return await self.bot.send_message_for_time(ctx, embed=generate_error_message("Cant parse given timestamp!"))
-
-		if not "s" in timestamp_dict: timestamp_dict["s"] = 0
-		if not "m" in timestamp_dict: timestamp_dict["m"] = 0
-		if not "h" in timestamp_dict: timestamp_dict["h"] = 0
-
-		if timestamp_dict["s"] >= 60:
-			timestamp_dict["m"] += timestamp_dict["s"] // 60
-			timestamp_dict["s"] = timestamp_dict["s"] % 60
-		if timestamp_dict["m"] >= 60:
-			timestamp_dict["h"] += timestamp_dict["m"] // 60
-			timestamp_dict["m"] = timestamp_dict["m"] % 60
-
-		if timestamp_dict["h"] > 240: return await self.bot.send_message_for_time(ctx, embed=generate_error_message("Maximum time is 240h!"))
-
-		reminder_time = datetime.datetime.now() + datetime.timedelta(hours=timestamp_dict["h"], minutes=timestamp_dict["m"], seconds=timestamp_dict["s"])
-		self.reminders.append({"ctx": ctx, "time": reminder_time, "repeats": 0})
-
-		em = discord.Embed(title=":alarm_clock: | Reminder", color=discord.Color.green())
-		em.set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url)
-		em.add_field(name="Reminder set time", value=f"{timestamp_dict['h']}h {timestamp_dict['m']}m {timestamp_dict['s']}s", inline=False)
-		em.add_field(name="Finish time", value=reminder_time.strftime('%H:%M:%S %d.%m.%Y'), inline=False)
-
-		return await self.bot.send_message_for_time(ctx, embed=em, time=10)
 
 	# Copied from https://github.com/Toaster192/rubbergod
 	@commands.cooldown(rate=5, per=20.0, type=commands.BucketType.user)

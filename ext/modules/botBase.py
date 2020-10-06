@@ -72,6 +72,7 @@ class BaseBot(commands.AutoShardedBot):
 		await self.change_presence(activity=discord.Game(name=STATUS_MESSAGE, type=0), status=discord.Status.online, afk=False)
 		logger.info('Ready!')
 
+	# Copied from https://github.com/Toaster192/rubbergod
 	async def on_error(self, event_method, *args, **kwargs):
 		channel_out = self.get_channel(DEVELOPER_CHANNEL_ID)
 		output = traceback.format_exc()

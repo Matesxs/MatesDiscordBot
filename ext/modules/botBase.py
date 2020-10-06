@@ -19,7 +19,16 @@ class BaseBot(commands.AutoShardedBot):
 	ended = False
 
 	def __init__(self, prefix, description):
-		super().__init__(command_prefix=prefix, description=description)
+		intents = discord.Intents.none()
+		intents.guilds = True
+		intents.members = True
+		intents.emojis = True
+		intents.messages = True
+		intents.reactions = True
+		intents.bans = True
+		intents.typing = True
+
+		super().__init__(command_prefix=prefix, description=description, intents=intents)
 
 		self.remove_command("help")
 		self.load_addons(MODULES_PATH, "cogs loaded")

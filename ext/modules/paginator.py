@@ -15,7 +15,7 @@ class PaginatorSession:
 		self.message = None  # current message being paginated, discord.Message
 		self.current = 0  # current page index, int
 		self.color = color  # embed color
-		# can't be awaited here, must be done in PaginatorSession.run()
+
 		self.reactions = OrderedDict({
 			'⏮': self.__first_page,
 			'◀': self.__previous_page,

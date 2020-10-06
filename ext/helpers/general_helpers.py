@@ -41,6 +41,9 @@ def developerOrTester():
 def get_creator(ins):
 	return ins.get_user(CREATOR)
 
+def cut_string(string: str, part_len: int):
+	return list(string[0 + i: part_len + i] for i in range(0, len(string), part_len))
+
 def load_extensions(ins, cogs, path='cogs'):
 	for cog in cogs:
 		members = inspect.getmembers(cog)

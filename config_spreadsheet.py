@@ -1,13 +1,14 @@
-## Core settings
-IGNORE_COMMAND_ERRORS = False
-
 # Discord connection setting
 TOKEN = "" ### Token to discord app ###
 STATUS_MESSAGE = "" ### Status message of your bot ###
 
 # Creator and testers IDs for permissions
-CREATOR = int() ### Discord user id for creator permissions ###
+CREATOR = int()  # Discord user id for creator permissions
 TESTERS = [] # Ids of other users to tester permissins
+
+# Developer settings
+DEVELOPER_SERVER_ID = int()
+DEVELOPER_CHANNEL_ID = int()
 
 # Bot minor changes
 # Logging settings
@@ -31,7 +32,6 @@ MAX_CACHED_GUILD_SETTINGS = 500
 
 ## Project structure paths
 MODULES_PATH = "cogs"
-RPG_ITEMS_PATH = "data/rpg/items.json"
 SONG_CACHE_DIRECTORY = "cache/songs_cache"
 DOWNLOAD_SONG_CACHE_DIRECTORY = "cache/songs_download_cache"
 ##end
@@ -46,15 +46,10 @@ COIN_MESSAGE_DROP_BONUS = 15
 XP_MESSAGE_DROP_CHANCE = 0.8
 XP_MESSAGE_DROP_AMMOUNT = 1
 
-ITEM_MESSAGE_DROP_CHANCE = 0.0002
-ITEM_MESSAGE_DROP_IDS = []
-
 BASE_WORK_REVENUE_FOR_HOUR = 2
 
 # Minor addons settings
 GAMBLE_NUMBER_OF_DRAWN_NUMBERS = 20
-
-MAXIMUM_INVENTORY_SIZE = 18
 ##end
 
 ## Song config

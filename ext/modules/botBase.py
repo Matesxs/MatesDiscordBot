@@ -7,9 +7,9 @@ import discord
 from discord.ext import commands
 
 from ext.miscellaneous.custom_loger import setup_custom_logger
-from ext.helpers.general_helpers import load_extensions, generate_error_message
+from ext.helpers.general_helpers import load_extensions, generate_error_message, cut_string
 from ext.modules.database_module import DatabaseHelper
-from config import MODULES_PATH, STATUS_MESSAGE, IGNORE_COMMAND_ERRORS, WORKERS_OF_SYNC_TASKS_EXECUTOR
+from config import MODULES_PATH, STATUS_MESSAGE, WORKERS_OF_SYNC_TASKS_EXECUTOR, DEVELOPER_CHANNEL_ID, DEVELOPER_SERVER_ID
 
 logger = setup_custom_logger(__name__)
 
@@ -71,6 +71,67 @@ class BaseBot(commands.AutoShardedBot):
 		await self.change_presence(activity=discord.Game(name=STATUS_MESSAGE, type=0), status=discord.Status.online, afk=False)
 		logger.info('Ready!')
 
+	async def on_error(self, event_method, *args, **kwargs):
+		channel_out = self.get_channel(DEVELOPER_CHANNEL_ID)
+		output = traceback.format_exc()
+		print(output)
+
+		embeds = []
+		for arg in args:
+			if arg.guild_id:
+				guild = self.get_guild(arg.guild_id)
+				event_guild = guild.name
+				channel = guild.get_channel(arg.channel_id)
+				message = await channel.fetch_message(arg.message_id)
+				message = message.content[:1000]
+			else:
+				event_guild = "DM"
+				message = arg.message_id
+
+			user = self.get_user(arg.user_id)
+			if not user:
+				user = arg.user_id
+			else:
+				channel = self.get_channel(arg.channel_id)
+				if channel:
+					message = await channel.fetch_message(arg.message_id)
+					if message.content:
+						message = message.content[:1000]
+					elif message.embeds:
+						embeds.extend(message.embeds)
+						message = "Embed v předchozí zprávě"
+					elif message.attachments:
+						message_out = ""
+						for attachment in message.attachments:
+							message_out += f"{attachment.url}\n"
+						message = message_out
+				else:
+					message = arg.message_id
+				user = str(user)
+			embed = discord.Embed(title=f"Ignoring exception in event '{event_method}'", color=0xFF0000)
+			embed.add_field(name="Zpráva", value=message, inline=False)
+			if arg.guild_id != DEVELOPER_SERVER_ID:
+				embed.add_field(name="Guild", value=event_guild)
+
+			if arg.member:
+				reaction_from = str(arg.member)
+			else:
+				reaction_from = user
+			embed.add_field(name="Reakce od", value=reaction_from)
+			embed.add_field(name="Reaction", value=arg.emoji)
+			embed.add_field(name="Typ", value=arg.event_type)
+			if arg.guild_id:
+				link = f"https://discord.com/channels/{arg.guild_id}/{arg.channel_id}/{arg.message_id}"
+				embed.add_field(name="Link", value=link, inline=False)
+			embeds.append(embed)
+
+		if channel_out is not None:
+			output = cut_string(output, 1900)
+			for embed in embeds:
+				await channel_out.send(embed=embed)
+			for message in output:
+				await channel_out.send(f"```\n{message}```")
+
 	async def on_command_error(self, ctx, error):
 		if isinstance(error, commands.CommandNotFound):
 			await ctx.message.delete()
@@ -90,9 +151,5 @@ class BaseBot(commands.AutoShardedBot):
 		elif isinstance(error, commands.BadArgument):
 			await ctx.message.delete()
 			await self.send_message_for_time(ctx, embed=generate_error_message(f'Some arguments of command missing or wrong, use help to get more info'), time=5)
-		elif not IGNORE_COMMAND_ERRORS:
-			self.last_trace_callback = ''.join(traceback.format_exception(type(error), error, error.__traceback__))
-			logger.error(f"\n\n{self.last_trace_callback}\n")
-			await ctx.send(embed=discord.Embed(title="Error trace", color=discord.Color.red(), description=self.last_trace_callback))
 		else:
 			pass

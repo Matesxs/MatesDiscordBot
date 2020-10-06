@@ -48,7 +48,7 @@ class RPG_Systems(commands.Cog):
 
 		if not ctx.valid:
 			user = None
-			gsettings = self.bot.database_handler.get_guild_settings(ctx.guild)
+			gsettings = await self.bot.database_handler.get_guild_settings(ctx.guild)
 
 			if random.random() < self.xp_message_drop_chance:
 				if not user:

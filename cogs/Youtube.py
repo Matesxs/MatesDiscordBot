@@ -211,7 +211,7 @@ class Youtube(GenericSoundCog):
 	@commands.has_role("Bcommander")
 	async def volume(self, ctx: commands.Context, *, volume:int):
 		await ctx.message.delete()
-		if volume > 100 or volume < 0: return await self.bot.send_message_for_time(ctx, embed=generate_error_message("Volume must be > 0 and < 100!"))
+		if volume > 100 or volume < 0: return await self.bot.send_message_for_time(ctx, embed=generate_error_message("Volume must be in interval <0 - 100>"))
 
 		voice_client:discord.VoiceClient = discord.utils.get(self.bot.voice_clients, guild=ctx.guild)
 		if self.voice_client_playing(voice_client):

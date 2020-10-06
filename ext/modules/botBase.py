@@ -78,7 +78,7 @@ class BaseBot(commands.AutoShardedBot):
 
 		channel_out = self.get_channel(DEVELOPER_CHANNEL_ID)
 		output = traceback.format_exc()
-		print(output)
+		logger.error(output)
 
 		embeds = []
 		for arg in args:

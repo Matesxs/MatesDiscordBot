@@ -9,7 +9,7 @@ from ext.modules.botBase import BaseBot
 from ext.modules.paginator import PaginatorSession
 from ext.miscellaneous.custom_loger import setup_custom_logger
 from ext.helpers.general_helpers import get_creator, generate_success_message, generate_error_message, is_bcommander, is_developer
-from config import ENABLE_INVITELINK, PERMISSION_INTEGER
+from config import ENABLE_INVITELINK, PERMISSION_INTEGER, DEVELOPER_CHANNEL_ID
 
 logger = setup_custom_logger(__name__)
 
@@ -130,11 +130,19 @@ class Common(commands.Cog):
 		emb.set_thumbnail(url=self.bot.user.avatar_url)
 		await ctx.send(embed=emb)
 
-	@commands.command(no_pm=False, name='report_bug', help='!report_bug <description of bug> will send message to author with your problem, this command have 1h cooldown')
-	@commands.cooldown(1, 300, commands.BucketType.user)
+	@commands.command(no_pm=False, name='report_bug', aliases=["bug"], help='!report_bug <description of bug> will send message to author with your problem')
+	@commands.cooldown(2, 300, commands.BucketType.user)
 	async def report_bug(self, ctx, *, message: str):
 		message_to_save = f'{time.time()}: {ctx.message.author.name}/{ctx.message.guild.name} - {message}\n'
 		await ctx.message.delete()
+
+		if DEVELOPER_CHANNEL_ID:
+			channel_out:discord.TextChannel = self.bot.get_channel(DEVELOPER_CHANNEL_ID)
+			emb = discord.Embed(title="Bug report", color=discord.Color.dark_orange())
+			emb.set_footer(text=ctx.message.author.name, icon_url=ctx.message.author.avatar_url)
+			emb.add_field(name="Guild", value=ctx.message.guild.name, inline=False)
+			emb.add_field(name="Description", value=message, inline=False)
+			await channel_out.send(embed=emb)
 
 		try:
 			with open('data/BugReport.rep', 'a') as f:

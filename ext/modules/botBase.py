@@ -115,7 +115,7 @@ class BaseBot(commands.AutoShardedBot):
 				user = str(user)
 			embed = discord.Embed(title=f"Ignoring exception in event '{event_method}'", color=0xFF0000)
 			embed.add_field(name="Zpráva", value=message, inline=False)
-			if arg.guild_id != DEVELOPER_SERVER_ID:
+			if not DEVELOPER_SERVER_ID or arg.guild_id != DEVELOPER_SERVER_ID:
 				embed.add_field(name="Guild", value=event_guild)
 
 			if arg.member:

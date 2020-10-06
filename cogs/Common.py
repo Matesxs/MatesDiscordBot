@@ -79,6 +79,7 @@ class Common(commands.Cog):
 
 		return await self.bot.send_message_for_time(ctx, embed=em, time=10)
 
+	# Copied from https://github.com/Toaster192/rubbergod
 	@commands.cooldown(rate=5, per=20.0, type=commands.BucketType.user)
 	@commands.command(no_pm=True, name='pet', help='!pet <optional mention of user> to pet user :)')
 	async def pet(self, ctx, user: discord.Member = None):

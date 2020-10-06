@@ -3,10 +3,8 @@ from discord.ext.commands import Context
 from collections import OrderedDict
 import asyncio
 
-from ext.modules.botBase import BaseBot
-
 class PaginatorSession:
-	def __init__(self, bot:BaseBot, ctx:Context, timeout=60, pages=None, color=discord.Color.green(), footer=''):
+	def __init__(self, bot, ctx:Context, timeout=60, pages=None, color=discord.Color.green(), footer=''):
 		self.bot = bot
 
 		self.footer = footer  # footer message

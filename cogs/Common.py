@@ -63,12 +63,9 @@ class Common(commands.Cog):
 		comm_list = self.bot.commands
 		pages = []
 
-		bcommander = is_bcommander(ctx)
-		developer = is_developer(ctx)
-
 		for c_name in self.bot.custom_extensions:
-			if str(c_name) == "Bcommander" and not bcommander: continue
-			if str(c_name) == "Developer" and not developer: continue
+			if str(c_name) == "Bcommander" and not is_bcommander(ctx): continue
+			if str(c_name) == "Developer" and not is_developer(ctx): continue
 
 			no_empty = False
 			emb = discord.Embed(title=f'{c_name} Help', colour=discord.Color.green())
